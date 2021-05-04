@@ -1,0 +1,27 @@
+{
+  "name": "c",
+  "version": "0.0.1",
+  "description": "This is a web version of Reversi for 1n4matx 285.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cathyht/Reversi-Cathyht.git"
+  },
+  "keywords": [
+    "Reversi",
+    "In4matx285"
+  ],
+  "author": "Cathy Tran",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/cathyht/Reversi-Cathyht/issues"
+  },
+  "homepage": "https://github.com/cathyht/Reversi-Cathyht#readme",
+  "dependencies": {
+    "node-static": "^0.7.11",
+    "socket.io": "^4.0.1"
+  }
+}
