@@ -9,7 +9,7 @@ function getIRIParamenterValue(requestedKey){
            return value;
        } 
     }
-return null;
+    return null;
 }
 
 let username = decodeURI(getIRIParamenterValue('username'));

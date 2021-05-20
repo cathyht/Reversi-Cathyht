@@ -123,19 +123,19 @@ io.on('connection', (socket) => {
                         username: players[member.id].username,
                         count: sockets.length
                     }
+                    /* Tell everyone that a new user joined the chat room */
+                    io.of('/').to(room).emit('join_room_response', response);
+                    serverLog('join_room succeeded ', JSON.stringify(response));
                 }
-                /* Tell everyone that a new user joined the chat room */
-                io.of('/').to(room).emit('join_room_response', response);
-                serverLog('join_room succeeded ', JSON.stringify(response));
             }
 
-        })
+        });
 
     });
 
 
     socket.on('disconnect', () => {
-        serverLog('a page disconnected from the server: ' + socket.id)
+        serverLog('a page disconnected from the server: ' + socket.id);
         if((typeof players[socket.id] != 'undefined') && (players[socket.id] != null)){
             let payload = {
                 username: players[socket.id].username,
@@ -146,8 +146,8 @@ io.on('connection', (socket) => {
             let room = players[socket.id].room;
             delete players[socket.id];
             /* Tell everyone who left the room */
-            io.of("/").to(room).emit('player_disconnected', payload);
-            serverLog('player_disconnected succeeded ', JSON.stringify(payload));
+            io.of("/").to(room).emit('player_disconnected',payload);
+            serverLog('player_disconnected succeeded ',JSON.stringify(payload));
         }
 
     });
