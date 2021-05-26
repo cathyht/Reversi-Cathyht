@@ -313,35 +313,35 @@ socket.on('game_update', (payload) =>{
             if (old_board[row][column] !== board[row][column]) {
                 let graphic = "";
                 let altTag = "";
-                if ((old_board[row][column] === '?' ) && (board[row][column] === "")) {
+                if ((old_board[row][column] === '?') && (board[row][column] === ' ')) {
                     graphic = "empty.gif";
                     altTag = "empty space";
                 }
-                else if ((old_board[row][column] === '?' ) && (board[row][column] === 'w')) {
+                else if ((old_board[row][column] === '?') && (board[row][column] === 'w')) {
                     graphic = "empty_to_corgi.gif";
                     altTag = "corgi token";
                 }
-                else if ((old_board[row][column] === '?' ) && (board[row][column] === 'b')) {
+                else if ((old_board[row][column] === '?') && (board[row][column] === 'b')) {
                     graphic = "empty_to_cow.gif";
                     altTag = "cow token";
                 }
-                else if ((old_board[row][column] === "" ) && (board[row][column] === 'w')) {
+                else if ((old_board[row][column] === ' ') && (board[row][column] === 'w')) {
                     graphic = "empty_to_corgi.gif";
                     altTag = "corgi token";
                 }
-                else if ((old_board[row][column] === "" ) && (board[row][column] === 'b')) {
+                else if ((old_board[row][column] === ' ') && (board[row][column] === 'b')) {
                     graphic = "empty_to_cow.gif";
                     altTag = "cow token";
                 }
-                else if ((old_board[row][column] === 'w' ) && (board[row][column] === "")) {
+                else if ((old_board[row][column] === 'w') && (board[row][column] === ' ')) {
                     graphic = "corgi_to_empty.gif";
                     altTag = "empty space";
                 }
-                else if ((old_board[row][column] === 'b' ) && (board[row][column] === "")) {
+                else if ((old_board[row][column] === 'b') && (board[row][column] === ' ')) {
                     graphic = "cow_to_empty.gif";
                     altTag = "empty space";
                 }
-                else if ((old_board[row][column] === 'w' ) && (board[row][column] === 'b')) {
+                else if ((old_board[row][column] === 'w') && (board[row][column] === 'b')) {
                     graphic = "corgi_to_cow.gif";
                     altTag = "cow token";
                 }
@@ -358,7 +358,7 @@ socket.on('game_update', (payload) =>{
                 $('#' + row + '_' + column).html('<img class="img-fluid" src="assets/images/'+graphic+'?time='+t+'" alt="'+altTag+'" />');
 
                 $('#' + row + '_' + column).off('click');
-                if (board[row][column] === "") {
+                if (board[row][column] === ' ') {
                     $('#' + row + '_' + column).addClass('hovered_over');
                     $('#' + row + '_' + column).click(((r,c) => {
                         return (() => {
@@ -367,7 +367,7 @@ socket.on('game_update', (payload) =>{
                                 column: c,
                                 color: my_color
                             };
-                            console.log('**** Client log message, sending \'play_token\' command: '+JSON.stringify(payload));
+                            console.log('**** Client log message, sending \'play_token\' command: ' + JSON.stringify(payload));
                             socket.emit('play_token', payload);
                         });
                     })(row, column));
@@ -384,7 +384,7 @@ socket.on('game_update', (payload) =>{
 })
 
 socket.on('play_token_response', (payload) => {
-    if ((typeof payload == 'undefined') || (payload === null)){
+    if ((typeof payload == 'undefined') || (payload === null)) {
         console.log('Server did not send a payload');
         return;
     }

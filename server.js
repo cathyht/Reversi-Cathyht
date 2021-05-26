@@ -509,7 +509,7 @@ socket.on('game_start', (payload) => {
             serverLog('play_token command failed', JSON.stringify(response));
             return;
         }
-        let color = player.room;
+        let color = payload.color;
         if ((typeof color == 'undefined') || (color === null)) {
             response = {};
             response.result = 'fail';
