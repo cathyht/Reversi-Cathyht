@@ -128,7 +128,7 @@ io.on('connection', (socket) => {
                     io.of('/').to(room).emit('join_room_response', response);
                     serverLog('join_room succeeded ', JSON.stringify(response));
                     if (room !== "Lobby") {
-                        send_game_update(socket,room, 'initial update');
+                        send_game_update(socket, room, 'initial update');
                     }
                 }
             }
@@ -613,7 +613,7 @@ function send_game_update(socket, game_id, message) {
                     games[game_id].player_cow.username = players[first].username;
                 }
                 else {
-                    /* This player should be kicked out) */
+                    /* This player should be kicked out */
                     console.log ("Kicking " + first + "out of game: "+ game_id);
                     io.in(first).socketsLeave([game_id]);
                 }
@@ -637,7 +637,7 @@ function send_game_update(socket, game_id, message) {
                     games[game_id].player_cow.username = players[second].username;
                 }
                 else {
-                    /* This player should be kicked out) */
+                    /* This player should be kicked out */
                     console.log ("Kicking " + second + "out of game: "+ game_id);
                     io.in(second).socketsLeave([game_id]);
                 }
