@@ -453,6 +453,7 @@ socket.on('game_start', (payload) => {
         serverLog('send_chat_message command succeeded', JSON.stringify(response));
     });
 
+    /**Cathy's note to self: player clicked on a square. Now the server is checking the command to see if everything is good and then executes aka flips token */
     socket.on('play_token', (payload) => {
         serverLog('Server received a command', '\'play_token\'', JSON, stringify(payload));
         /* Check that the data coming from the client is good */
@@ -528,21 +529,56 @@ socket.on('game_start', (payload) => {
             return;
         }
 
+        /* Make sure the current attempt is by the correct color */
+        if (color !== game.whose_turn) {
+            let response = {
+                result: 'fail',
+                message: 'play_token played the wrong color. It\'s not their turn'
+            }
+            socket.emit('play_token_response', response);
+            serverLog('play_token command failed', JSON.stringify(response));
+            return;
+        }
+
+        /* Make sure the current play is coming from the expected player */
+        if (
+            ((game.whose_turn === 'white') && (game.player_white.socket !== socket.id)) ||
+            ((game.whose_turn === 'black') && (game.player_black.socket !== socket.id))
+        ) {
+            let response = {
+                result: 'fail',
+                message: 'play_token played the right color, but by the wrong player'
+            }
+            socket.emit('play_token_response', response);
+            serverLog('play_token command failed', JSON.stringify(response));
+            return;
+        }
+
+
         let response = {
             result: 'success'
         }
         socket.emit('play_token_response', response);
 
         /* Execute the move*/
-        if (color === 'corgi') {
+        if (color === 'white') {
             game.board[row][column] = 'w';
-            game.whose_turn = 'cow';
+            flip_tokens('w', row, column, game.board);
+            game.whose_turn = 'black';
+            game.legal_moves = calculate_legal_moves('b', game.board);
         }
 
-        else if (color === 'cow') {
+        else if (color === 'black') {
             game.board[row][column] = 'b';
-            game.whose_turn = 'corgi';
+            flip_tokens('b', row, column, game.board);
+            game.whose_turn = 'white';
+            game.legal_moves = calculate_legal_moves('w', game.board);
         }
+
+
+        let d = new Date ();
+        game.last_move_time = d.getTime();
+
 
         send_game_update(socket, game_id, 'played a token');
     });
@@ -556,17 +592,17 @@ let games = [];
 
 function create_new_game() {
     let new_game = {};
-    new_game.player_corgi = {};
-    new_game.player_corgi.socket = "";
-    new_game.player_corgi.username = "";
-    new_game.player_cow = {};
-    new_game.player_cow.socket = "";
-    new_game.player_cow.username = "";
+    new_game.player_white = {};
+    new_game.player_white.socket = "";
+    new_game.player_white.username = "";
+    new_game.player_black = {};
+    new_game.player_black.socket = "";
+    new_game.player_black.username = "";
 
     var d = new Date();
     new_game.last_move_time = d.getTime();
 
-    new_game.whose_turn + 'corgi';
+    new_game.whose_turn = 'black';
 
     new_game.board = [
         [' ',' ',' ',' ',' ',' ',' ',' '],
@@ -579,7 +615,145 @@ function create_new_game() {
         [' ',' ',' ',' ',' ',' ',' ',' ']
     ]; 
     
+    new_game.legal_moves = calculate_legal_moves('b', new_game.board);
+
     return new_game;
+}
+
+function check_line_match(color, dr, dc, r, c, board) {
+    if (board[r][c] === color) {
+        return true;
+    }
+    if (board[r][c] === ' ') {
+        return false;
+    }
+    /**Check to make sure we aren't going to walk off the board     */
+    if ((r + dr < 0 ) || (r +dr > 7)) {
+        return false;
+    }
+
+    if ((c + dc < 0 ) || (c +dc > 7)) {
+        return false;
+    }
+
+    return (check_line_match(color, dr, dc, r+dr, c+dc, board));
+}
+
+/*Return true if r + dr supports playing at r and c + dc supports playing at c */
+function adjacent_support(who,dr,dc,r,c,board){
+    let other;
+    if (who === 'b') {
+        other = 'w';
+    }
+    else if (who === 'w') {
+        other = 'b';
+    }
+    else {
+        log("Houston we have a problem:"+who);
+        return false;
+    }
+
+    /**Check to make sure that the adjacent support is on the board */
+    if ((r + dr < 0 ) || (r +dr > 7)) {
+        return false;
+    }
+
+    if ((c + dc < 0 ) || (c +dc > 7)) {
+        return false;
+    }
+
+    /** Check that the opposite color is present */
+    if (board[r +dr][c + dc] !== other) {
+        return false;
+    }
+
+    /**Check to make sure that there is space for a matching color to capture tokens */
+    if ((r + dr + dr < 0 ) || (r +dr + dr> 7)) {
+        return false;
+    }
+
+    if ((c + dc + dc < 0 ) || (c +dc + dc > 7)) {
+        return false;
+    }
+
+    return check_line_match(who, dr, dc, r+dr+dr, c+dc+dc, board);
+
+}
+
+function calculate_legal_moves(who, board) {
+    let legal_moves = [
+        [' ',' ',' ',' ',' ',' ',' ',' '],
+        [' ',' ',' ',' ',' ',' ',' ',' '],
+        [' ',' ',' ',' ',' ',' ',' ',' '],
+        [' ',' ',' ',' ',' ',' ',' ',' '],
+        [' ',' ',' ',' ',' ',' ',' ',' '],
+        [' ',' ',' ',' ',' ',' ',' ',' '],
+        [' ',' ',' ',' ',' ',' ',' ',' '],
+        [' ',' ',' ',' ',' ',' ',' ',' ']
+    ]; 
+
+    for (let row = 0; row < 8; row++){
+        for (let column = 0; column < 8; column++) {
+            if (board[row][column] === ' ') {
+                nw = adjacent_support(who, -1, -1, row, column, board);
+                nn = adjacent_support(who, -1, 0, row, column, board);
+                ne = adjacent_support(who, -1, 1, row, column, board);
+
+                ww = adjacent_support(who, 0, -1, row, column, board);
+                ee = adjacent_support(who, 0, 1, row, column, board);
+
+                sw = adjacent_support(who, 1, -1, row, column, board);
+                ss = adjacent_support(who, 1, 0, row, column, board);
+                se = adjacent_support(who, 1, 1, row, column, board);
+                if( nw || nn || ne || ww || ee || sw || ss || se) {
+                    legal_moves[row][column] = who;
+                }
+            }
+        }
+    }
+    return legal_moves;
+}
+
+function flip_line(who, dr,dc, r, c, board){
+     if ((r + dr < 0 ) || (r +dr > 7)) {
+        return false;
+    }
+
+    if ((c + dc < 0 ) || (c +dc > 7)) {
+        return false;
+    }
+
+    if (board[r +dr][c + dc] === ' ') {
+        return false;
+    }
+
+    if (board[r +dr][c + dc] === who) {
+        return true;
+    }
+
+    else{
+        if(flip_line(who, dr, dc, r+dr, c+dc, board)){
+            board[r+dr][c+dc] = who;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+}
+
+function flip_tokens(who, row, column, board){
+   flip_line(who, -1, -1, row, column, board);
+   flip_line(who, -1, 0, row, column, board);
+   flip_line(who, -1, 1, row, column, board);
+
+   flip_line(who, 0, -1, row, column, board);
+   flip_line(who, 0, 1, row, column, board);
+
+   flip_line(who, 1, -1, row, column, board);
+   flip_line(who, 1, 0, row, column, board);
+   flip_line(who, 1, 1, row, column, board);
+
 }
 
 function send_game_update(socket, game_id, message) {
@@ -597,20 +771,20 @@ function send_game_update(socket, game_id, message) {
         const iterator = sockets[Symbol.iterator]();
         if (sockets.size >= 1) {
             let first = iterator.next().value;
-            if ((games[game_id].player_corgi.socket != first) &&
-                (games[game_id].player_cow.socket != first)) {
+            if ((games[game_id].player_white.socket != first) &&
+                (games[game_id].player_black.socket != first)) {
                 /* Player does not have a color */
-                if (games[game_id].player_corgi.socket === "") {
-                    /* This player should be white(corgi) */
-                    console.log ("Corgi is assigned to: " + first);
-                    games[game_id].player_corgi.socket = first;
-                    games[game_id].player_corgi.username = players[first].username;
+                if (games[game_id].player_white.socket === "") {
+                    /* This player should be white(white) */
+                    console.log ("white is assigned to: " + first);
+                    games[game_id].player_white.socket = first;
+                    games[game_id].player_white.username = players[first].username;
                 }
-                else if (games[game_id].player_cow.socket === "") {
-                    /* This player should be black(cow) */
-                    console.log ("Cow is assigned to: " + first);
-                    games[game_id].player_cow.socket = first;
-                    games[game_id].player_cow.username = players[first].username;
+                else if (games[game_id].player_black.socket === "") {
+                    /* This player should be black(black) */
+                    console.log ("black is assigned to: " + first);
+                    games[game_id].player_black.socket = first;
+                    games[game_id].player_black.username = players[first].username;
                 }
                 else {
                     /* This player should be kicked out */
@@ -621,20 +795,20 @@ function send_game_update(socket, game_id, message) {
         }
         if (sockets.size >= 2) {
             let second = iterator.next().value;
-            if ((games[game_id].player_corgi.socket != second) &&
-                (games[game_id].player_cow.socket != second)) {
+            if ((games[game_id].player_white.socket != second) &&
+                (games[game_id].player_black.socket != second)) {
                 /* Player does not have a color */
-                if (games[game_id].player_corgi.socket === "") {
+                if (games[game_id].player_white.socket === "") {
                     /* This player should be white(corgi) */
-                    console.log ("Corgi is assigned to: " + second);
-                    games[game_id].player_corgi.socket = second;
-                    games[game_id].player_corgi.username = players[second].username;
+                    console.log ("White is assigned to: " + second);
+                    games[game_id].player_white.socket = second;
+                    games[game_id].player_white.username = players[second].username;
                 }
-                else if (games[game_id].player_cow.socket === "") {
+                else if (games[game_id].player_black.socket === "") {
                     /* This player should be black(cow) */
-                    console.log ("Cow is assigned to: " + second);
-                    games[game_id].player_cow.socket = second;
-                    games[game_id].player_cow.username = players[second].username;
+                    console.log ("Black is assigned to: " + second);
+                    games[game_id].player_black.socket = second;
+                    games[game_id].player_black.username = players[second].username;
                 }
                 else {
                     /* This player should be kicked out */
@@ -656,20 +830,39 @@ function send_game_update(socket, game_id, message) {
     })
     
     /* Check if the game is over */  
-    let count = 0;
+    let legal_moves = 0;
+    let whitesum = 0;
+    let blacksum = 0;
+
     for (let row = 0; row < 8; row++){
         for (let column = 0; column < 8; column++) {
-            if (games[game_id].board[row][column] != ' ') {
-                count++;
+            if (games[game_id].legal_moves[row][column] !== ' ') {
+                legal_moves++;
             }
+            if (games[game_id].board[row][column] != 'w') {
+                whitesum++;
+            }
+            if (games[game_id].board[row][column] != 'b') {
+                blacksum++;
+            }
+
         }
     }
-    if (count === 64) {
+    if (legal_moves === 0) {
+
+        let winner = "Tie Game"
+        if (whitesum > blacksum) {
+            winner = "Corgi"
+        }
+        if (whitesum < blacksum) {
+            winner = "Cow"
+        }
+
         let payload = {
             result: 'success',
             game_id: game_id,
             game: games[game_id],
-            who_won: 'everyone'
+            who_won: winner
         }
         io.in(game_id).emit('game_over', payload);
 
