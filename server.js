@@ -839,10 +839,10 @@ function send_game_update(socket, game_id, message) {
             if (games[game_id].legal_moves[row][column] !== ' ') {
                 legal_moves++;
             }
-            if (games[game_id].board[row][column] != 'w') {
+            if (games[game_id].board[row][column] === 'w') {
                 whitesum++;
             }
-            if (games[game_id].board[row][column] != 'b') {
+            if (games[game_id].board[row][column] === 'b') {
                 blacksum++;
             }
 
@@ -850,7 +850,7 @@ function send_game_update(socket, game_id, message) {
     }
     if (legal_moves === 0) {
 
-        let winner = "Tie Game"
+        let winner = "Tie Game";
         if (whitesum > blacksum) {
             winner = "Corgi"
         }
