@@ -411,9 +411,13 @@ socket.on('game_update', (payload) =>{
             let seconds = Math.floor((elapsed_m % (60 * 1000)) / 1000);
             let total = minutes * 60 + seconds;
             if (total > 100) {
-                total = 100;
-            }
-            $("#elapsed").css("width", total + "%").attr("aria-valuenow", total);
+                total = 100; /* cap progress bar to 100 */
+             }
+             if (total < 0) {
+                total = 0;
+                last_time = d.getTime();
+             }
+             $("#elapsed").css("width", total + "%").attr("aria-valuenow", total);
             let timestring = "" + seconds;
             timestring = timestring.padStart(2, '0');
             timestring = minutes + ":" + timestring;
